@@ -8,7 +8,7 @@ data class Snake(var x: Int, var y: Int) {
     var isAlive = true
     private var direction = Direction.LEFT
     var snakeParts =
-        mutableListOf(GameObject(x, y), GameObject(x, y), GameObject(x, y))
+        mutableListOf(GameObject(x, y), GameObject(x+1, y), GameObject(x+2, y))
         private set
 
     public fun setDirection(direction: Direction) {
@@ -24,7 +24,7 @@ data class Snake(var x: Int, var y: Int) {
         }
     }
 
-    public fun move(apple: Apple, mushroom: Mushroom, timeFreezer: TimeFreezer, bomb: Bomb) {
+    fun move(apple: Apple, mushroom: Mushroom, timeFreezer: TimeFreezer, bomb: Bomb) {
         var snakeHead = createNewHead()
         if ((snakeHead.x < 0) || (snakeHead.x >= WIDTH) || (snakeHead.y < 0) || (snakeHead.y >= HEIGHT)) isAlive =
             false

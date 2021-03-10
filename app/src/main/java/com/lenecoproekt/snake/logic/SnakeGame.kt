@@ -3,6 +3,8 @@ package com.lenecoproekt.snake.logic
 import com.lenecoproekt.snake.*
 import com.lenecoproekt.snake.logic.gameObjects.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
 import kotlin.coroutines.CoroutineContext
 import kotlin.random.Random
 
@@ -24,45 +26,62 @@ class SnakeGame : CoroutineScope {
     private var turnDelay = 300L
     private var goal = 28
 
-    private lateinit var apple: Apple
-    private lateinit var mushroom: Mushroom
-    private lateinit var timeFreezer: TimeFreezer
-    private lateinit var bomb: Bomb
+    private var apple = Apple(0, 0)
+    private var mushroom = Mushroom(0, 0)
+    private var timeFreezer = TimeFreezer(0, 0)
+    private var bomb = Bomb(0, 0)
 
     val gameField: Array<Array<String?>> = Array(HEIGHT) { arrayOfNulls(WIDTH) }
 
     private fun clear() {
         for (i in 0 until HEIGHT) {
             for (j in 0 until WIDTH) {
-                    gameField[i][j] = ""
+                gameField[i][j] = ""
             }
         }
     }
 
-    public fun startGame(): Array<Array<String?>> {
+    public suspend fun startGame() {
         initialize()
-        return gameField
+        while (!gameOver && !win) {
+            nextTurn(turnDelay)
+            sendData()
+        }
     }
 
-    private fun initialize() {
+    suspend fun sendData(): ReceiveChannel<Result> =
+        Channel<Result>(Channel.CONFLATED).apply {
+            try {
+                offer(Result.Success(gameField))
+            } catch (e: Throwable) {
+                offer(Result.Error(e))
+            }
+        }
+
+    private suspend fun initialize() {
         clear()
         loadSnake()
+        apple.isAlive = false
+        mushroom.isAlive = false
+        timeFreezer.isAlive = false
+        bomb.isAlive = false
         createNewApple()
         createNewMushroom()
         createNewTimeFreezer()
         createNewBomb()
+        sendData()
     }
 
     private fun loadSnake() {
         gameField[snake.snakeParts[0].x][snake.snakeParts[0].y] = SNAKE_HEAD
-        for (i in 1 until snake.snakeParts.size){
+        for (i in 1 until snake.snakeParts.size) {
             gameField[snake.snakeParts[i].x][snake.snakeParts[i].y] = SNAKE_BODY
         }
     }
 
     private fun createNewBomb() {
         do {
-            bomb = Bomb(Random(WIDTH).nextInt(), Random(HEIGHT).nextInt());
+            bomb = Bomb(Random.nextInt(WIDTH), Random.nextInt(HEIGHT));
         } while ((snake.checkCollision(bomb)) || ((mushroom.x == bomb.x) && (mushroom.y == bomb.y))
             || ((apple.x == bomb.x) && (apple.y == bomb.y)) || ((timeFreezer.x == bomb.x) && (timeFreezer.y == bomb.y))
         )
@@ -72,7 +91,7 @@ class SnakeGame : CoroutineScope {
     private fun createNewTimeFreezer() {
         if (!timeFreezer.isAlive) {
             do {
-                timeFreezer = TimeFreezer(Random(WIDTH).nextInt(), Random(HEIGHT).nextInt());
+                timeFreezer = TimeFreezer(Random.nextInt(WIDTH), Random.nextInt(HEIGHT))
             } while ((snake.checkCollision(timeFreezer)) || ((mushroom.x == timeFreezer.x) && (mushroom.y == timeFreezer.y))
                 || ((apple.x == timeFreezer.x) && (apple.y == timeFreezer.y))
             )
@@ -83,7 +102,7 @@ class SnakeGame : CoroutineScope {
     private fun createNewMushroom() {
         if (!mushroom.isAlive) {
             do {
-                mushroom = Mushroom(Random(WIDTH).nextInt(), Random(HEIGHT).nextInt())
+                mushroom = Mushroom(Random.nextInt(WIDTH), Random.nextInt(HEIGHT))
             } while (snake.checkCollision(mushroom) || ((mushroom.x == apple.x) && (mushroom.y == apple.y))
             )
         }
@@ -93,14 +112,14 @@ class SnakeGame : CoroutineScope {
     private fun createNewApple() {
         if (!apple.isAlive) {
             do {
-                apple = Apple(Random(WIDTH).nextInt(), Random(HEIGHT).nextInt())
+                apple = Apple(Random.nextInt(WIDTH), Random.nextInt(HEIGHT))
             } while (snake.checkCollision(apple)
             )
         }
         gameField[apple.x][apple.y] = APPLE
     }
 
-    private suspend fun nextTurn(tDelay: Long) :  Array<Array<String?>>{
+    private suspend fun nextTurn(tDelay: Long): Array<Array<String?>> {
         delay(tDelay)
         snake.move(apple, mushroom, timeFreezer, bomb)
         if (!apple.isAlive) {
@@ -108,11 +127,11 @@ class SnakeGame : CoroutineScope {
             score += 5
             turnDelay -= 10
         }
-        if (!mushroom.isAlive){
+        if (!mushroom.isAlive) {
             initialize()
             score -= 5
         }
-        if (!timeFreezer.isAlive){
+        if (!timeFreezer.isAlive) {
             initialize()
             turnDelay += 10
         }
@@ -123,7 +142,7 @@ class SnakeGame : CoroutineScope {
     }
 
     fun setSnakeDirection(direction: Direction) {
-        when(direction){
+        when (direction) {
             Direction.UP -> snake.setDirection(Direction.UP)
             Direction.DOWN -> snake.setDirection(Direction.DOWN)
             Direction.LEFT -> snake.setDirection(Direction.LEFT)
