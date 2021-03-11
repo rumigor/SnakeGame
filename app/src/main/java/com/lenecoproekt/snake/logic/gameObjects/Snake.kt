@@ -6,12 +6,12 @@ import com.lenecoproekt.snake.logic.Direction
 
 data class Snake(var x: Int, var y: Int) {
     var isAlive = true
-    private var direction = Direction.LEFT
+    var direction = Direction.LEFT
     var snakeParts =
         mutableListOf(GameObject(x, y), GameObject(x+1, y), GameObject(x+2, y))
         private set
 
-    public fun setDirection(direction: Direction) {
+    fun changeDirection(direction: Direction) {
         when (this.direction) {
             Direction.RIGHT -> if (direction != Direction.LEFT || (snakeParts[0].x != snakeParts[1].x))
                 this.direction = direction

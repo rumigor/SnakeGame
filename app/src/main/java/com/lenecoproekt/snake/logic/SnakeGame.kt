@@ -1,11 +1,17 @@
 package com.lenecoproekt.snake.logic
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import com.lenecoproekt.snake.*
 import com.lenecoproekt.snake.logic.gameObjects.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 import kotlin.random.Random
 
 class SnakeGame : CoroutineScope {
@@ -14,7 +20,8 @@ class SnakeGame : CoroutineScope {
         Dispatchers.Default + Job()
     }
 
-    private var snake = Snake(WIDTH / 2, HEIGHT / 2)
+    var snake = Snake(WIDTH / 2, HEIGHT / 2)
+        private set
 
     var gameOver = false
         private set
@@ -22,6 +29,7 @@ class SnakeGame : CoroutineScope {
         private set
     var score = 0
         private set
+
 
     private var turnDelay = 300L
     private var goal = 28
@@ -31,9 +39,22 @@ class SnakeGame : CoroutineScope {
     private var timeFreezer = TimeFreezer(0, 0)
     private var bomb = Bomb(0, 0)
 
-    val gameField: Array<Array<String?>> = Array(HEIGHT) { arrayOfNulls(WIDTH) }
+    val gameField: Array<Array<String?>> = Array(HEIGHT) { arrayOf("", "", "", "", "", "", "", "",
+        "","","","","","","") }
 
-    private fun clear() {
+    private var _stateData = MutableStateFlow(gameField)
+
+    val stateData: StateFlow<Array<Array<String?>>> = _stateData
+
+
+    init{
+        apple.isAlive = false
+        mushroom.isAlive = false
+        timeFreezer.isAlive = false
+        bomb.isAlive = false
+    }
+
+    private fun loadField() {
         for (i in 0 until HEIGHT) {
             for (j in 0 until WIDTH) {
                 gameField[i][j] = ""
@@ -44,32 +65,21 @@ class SnakeGame : CoroutineScope {
     public suspend fun startGame() {
         initialize()
         while (!gameOver && !win) {
-            nextTurn(turnDelay)
-            sendData()
+            delay(turnDelay)
+            nextTurn()
         }
     }
 
-    suspend fun sendData(): ReceiveChannel<Result> =
-        Channel<Result>(Channel.CONFLATED).apply {
-            try {
-                offer(Result.Success(gameField))
-            } catch (e: Throwable) {
-                offer(Result.Error(e))
-            }
-        }
 
-    private suspend fun initialize() {
-        clear()
+    private fun initialize() {
+        loadField()
+        loadField()
         loadSnake()
-        apple.isAlive = false
-        mushroom.isAlive = false
-        timeFreezer.isAlive = false
-        bomb.isAlive = false
         createNewApple()
         createNewMushroom()
         createNewTimeFreezer()
         createNewBomb()
-        sendData()
+        _stateData.value = gameField
     }
 
     private fun loadSnake() {
@@ -119,34 +129,42 @@ class SnakeGame : CoroutineScope {
         gameField[apple.x][apple.y] = APPLE
     }
 
-    private suspend fun nextTurn(tDelay: Long): Array<Array<String?>> {
-        delay(tDelay)
+    private fun nextTurn() {
         snake.move(apple, mushroom, timeFreezer, bomb)
         if (!apple.isAlive) {
             initialize()
             score += 5
             turnDelay -= 10
+            _stateData.value = gameField
+            return
         }
         if (!mushroom.isAlive) {
             initialize()
             score -= 5
+            _stateData.value = gameField
+            return
         }
         if (!timeFreezer.isAlive) {
             initialize()
             turnDelay += 10
+            _stateData.value = gameField
+            return
         }
         if (!bomb.isAlive) gameOver = true
         if (!snake.isAlive) gameOver = true
         if (snake.getLength() > goal) win = true
-        return gameField
+        initialize()
+        _stateData.value = gameField
     }
 
     fun setSnakeDirection(direction: Direction) {
         when (direction) {
-            Direction.UP -> snake.setDirection(Direction.UP)
-            Direction.DOWN -> snake.setDirection(Direction.DOWN)
-            Direction.LEFT -> snake.setDirection(Direction.LEFT)
-            Direction.RIGHT -> snake.setDirection(Direction.RIGHT)
+            Direction.UP -> snake.changeDirection(Direction.UP)
+            Direction.DOWN -> snake.changeDirection(Direction.DOWN)
+            Direction.LEFT -> snake.changeDirection(Direction.LEFT)
+            Direction.RIGHT -> snake.changeDirection(Direction.RIGHT)
         }
     }
+
+    fun getDirection() = snake.direction
 }

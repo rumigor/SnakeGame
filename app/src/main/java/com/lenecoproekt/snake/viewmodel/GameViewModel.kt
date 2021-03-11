@@ -1,13 +1,15 @@
 package com.lenecoproekt.snake.viewmodel
 
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.lenecoproekt.snake.logic.Result
+import com.lenecoproekt.snake.logic.Direction
 import com.lenecoproekt.snake.logic.SnakeGame
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.flow.collect
+import java.lang.Exception
 import kotlin.coroutines.CoroutineContext
 
 class GameViewModel : ViewModel(), CoroutineScope {
@@ -15,20 +17,21 @@ class GameViewModel : ViewModel(), CoroutineScope {
         Dispatchers.Default + Job()
     }
     private val snakeGame = SnakeGame()
-    private val gameFieldChannel by lazy { runBlocking { snakeGame.sendData() } }
 
-    init{
-        launch{
-            snakeGame.startGame()
-            gameFieldChannel.consumeEach { result ->
-                when (result) {
-                    is Result.Success<*> -> {
-                        setData(result.data as Array<Array<String?>>)
-                    }
-                    is Result.Error -> setError(result.error)
+    init {
+        launch { snakeGame.startGame() }
+        launch {
+            snakeGame.stateData.collect {
+                try {
+                    setData(it)
+                } catch (e: Exception) {
+                    setError(e)
                 }
             }
+
         }
+
+
     }
 
     private val viewStateChannel = BroadcastChannel<Array<Array<String?>>>(Channel.CONFLATED)
@@ -48,6 +51,19 @@ class GameViewModel : ViewModel(), CoroutineScope {
             viewStateChannel.send(data)
         }
     }
+
+    fun setSnakeDirection(i: Int, j: Int) {
+        if (getDirection() == Direction.UP || getDirection() == Direction.DOWN) {
+            if (snakeGame.snake.y < j) snakeGame.setSnakeDirection(Direction.RIGHT)
+            else snakeGame.setSnakeDirection(Direction.LEFT)
+        } else {
+            if (snakeGame.snake.x < i) snakeGame.setSnakeDirection(Direction.DOWN)
+            else snakeGame.setSnakeDirection(Direction.UP)
+        }
+    }
+
+    private fun getDirection() = snakeGame.getDirection()
+
     override fun onCleared() {
         viewStateChannel.close()
         errorChannel.close()

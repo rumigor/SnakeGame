@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.snackbar.Snackbar
 import com.lenecoproekt.snake.*
 import com.lenecoproekt.snake.databinding.ActivityGameBinding
+import com.lenecoproekt.snake.logic.Direction
 import com.lenecoproekt.snake.viewmodel.GameViewModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.consumeEach
@@ -30,7 +31,7 @@ class GameActivity : AppCompatActivity(), CoroutineScope {
 
     private val viewModel: GameViewModel by lazy { ViewModelProvider(this).get(GameViewModel::class.java) }
 
-    private val ui: ActivityGameBinding by lazy{ActivityGameBinding.inflate(layoutInflater)}
+    private val ui: ActivityGameBinding by lazy { ActivityGameBinding.inflate(layoutInflater) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,29 +40,38 @@ class GameActivity : AppCompatActivity(), CoroutineScope {
         ui.score.text = POINTS
         ui.snakeLength.text = SNAKE_LENGTH
         initializeGameField()
+        ui.restart.setOnClickListener{
+            recreate()
+        }
     }
 
     private fun renderData(gameField: Array<Array<String?>>) {
-        for (i in 0 until HEIGHT){
-            for(j in 0 until WIDTH){
+        for (i in 0 until HEIGHT) {
+            for (j in 0 until WIDTH) {
                 cells[i][j]?.text = gameField[i][j]
             }
         }
     }
 
     private fun initializeGameField() {
-        for (i in 0 until HEIGHT){
+        for (i in 0 until HEIGHT) {
             val tableRow = TableRow(this)
             tableRow.layoutParams = TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT)
-            for (j in 0 until WIDTH){
+            for (j in 0 until WIDTH) {
                 val cell = TextView(this)
-                cell.setBackgroundColor(resources.getColor(R.color.design_default_color_primary, theme))
+                cell.setBackgroundColor(
+                    resources.getColor(
+                        R.color.design_default_color_primary,
+                        theme
+                    )
+                )
                 cell.text = "2"
                 cell.textSize = 24 / ((WIDTH + HEIGHT).toFloat() / 20)
                 cell.textAlignment = View.TEXT_ALIGNMENT_CENTER
                 cells[i][j] = cell
                 tableRow.addView(cell, j)
-                cell.setOnClickListener{
+                cells[i][j]?.setOnClickListener {
+                    viewModel.setSnakeDirection(i, j)
                 }
             }
             ui.gameField.addView(tableRow, i)
