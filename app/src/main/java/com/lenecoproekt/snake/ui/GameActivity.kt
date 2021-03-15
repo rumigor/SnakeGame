@@ -1,12 +1,18 @@
 package com.lenecoproekt.snake.ui
 
+import android.content.Context
+import android.graphics.Point
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.view.Display
 import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TableRow
 import android.widget.TextView
+import androidx.annotation.RequiresApi
+import androidx.annotation.Size
 import androidx.core.view.marginBottom
 import androidx.core.view.setPadding
 import androidx.lifecycle.ViewModelProvider
@@ -33,6 +39,7 @@ class GameActivity : AppCompatActivity(), CoroutineScope {
 
     private val ui: ActivityGameBinding by lazy { ActivityGameBinding.inflate(layoutInflater) }
 
+    @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(ui.root)
@@ -48,25 +55,37 @@ class GameActivity : AppCompatActivity(), CoroutineScope {
     private fun renderData(gameField: Array<Array<String?>>) {
         for (i in 0 until HEIGHT) {
             for (j in 0 until WIDTH) {
-                cells[i][j]?.text = gameField[i][j]
+                when (gameField[i][j]){
+                    SNAKE_HEAD -> cells[i][j]?.setBackgroundResource(R.drawable.ic_baseline_android_24)
+                    SNAKE_BODY -> cells[i][j]?.setBackgroundResource(R.drawable.ic_snake_body_1_24)
+                    "" -> cells[i][j]?.setBackgroundResource(R.drawable.ic_baseline_grass_24)
+                    else -> {
+                        cells[i][j]?.setBackgroundColor(resources.getColor(R.color.white, theme))
+                        cells[i][j]?.text = gameField[i][j]
+                    }
+                }
             }
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.R)
     private fun initializeGameField() {
         for (i in 0 until HEIGHT) {
             val tableRow = TableRow(this)
             tableRow.layoutParams = TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT)
             for (j in 0 until WIDTH) {
                 val cell = TextView(this)
-                cell.setBackgroundColor(
-                    resources.getColor(
-                        R.color.design_default_color_primary,
-                        theme
-                    )
-                )
-                cell.text = "2"
-                cell.textSize = 24 / ((WIDTH + HEIGHT).toFloat() / 20)
+                cell.setBackgroundResource(R.drawable.ic_baseline_grass_24)
+                cell.text = ""
+                val display = this.display
+                val size = Point()
+                display?.getRealSize(size)
+                val scrWidth = size.x
+                val scrHeight = size.y
+                val dm = resources.displayMetrics
+//                cell.textSize = (scrHeight.toFloat() / scrWidth.toFloat()) * (dm.densityDpi) / ((WIDTH + HEIGHT).toFloat())
+                cell.textSize = 24f
+                println(cell.textSize)
                 cell.textAlignment = View.TEXT_ALIGNMENT_CENTER
                 cells[i][j] = cell
                 tableRow.addView(cell, j)

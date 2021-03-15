@@ -8,6 +8,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.flow.collect
 import java.lang.Exception
 import kotlin.coroutines.CoroutineContext
@@ -18,21 +19,19 @@ class GameViewModel : ViewModel(), CoroutineScope {
     }
     private val snakeGame = SnakeGame()
 
+    private var dataJob: Job
+    private var errorJob: Job
+
     init {
         launch { snakeGame.startGame() }
-        launch {
-            snakeGame.stateData.collect {
-                try {
-                    setData(it)
-                } catch (e: Exception) {
-                    setError(e)
-                }
-            }
-
-        }
-
-
+        dataJob = launch { snakeGame.getState().consumeEach {
+            setData(it)
+        } }
+        errorJob = launch { snakeGame.getErrorChannel().consumeEach {
+            setError(it)
+        } }
     }
+
 
     private val viewStateChannel = BroadcastChannel<Array<Array<String?>>>(Channel.CONFLATED)
     private val errorChannel = Channel<Throwable>()
@@ -54,10 +53,10 @@ class GameViewModel : ViewModel(), CoroutineScope {
 
     fun setSnakeDirection(i: Int, j: Int) {
         if (getDirection() == Direction.UP || getDirection() == Direction.DOWN) {
-            if (snakeGame.snake.y < j) snakeGame.setSnakeDirection(Direction.RIGHT)
+            if (snakeGame.snake.snakeParts[0].y < j) snakeGame.setSnakeDirection(Direction.RIGHT)
             else snakeGame.setSnakeDirection(Direction.LEFT)
         } else {
-            if (snakeGame.snake.x < i) snakeGame.setSnakeDirection(Direction.DOWN)
+            if (snakeGame.snake.snakeParts[0].x < i) snakeGame.setSnakeDirection(Direction.DOWN)
             else snakeGame.setSnakeDirection(Direction.UP)
         }
     }
