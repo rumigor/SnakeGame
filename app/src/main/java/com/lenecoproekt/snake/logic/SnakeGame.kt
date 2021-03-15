@@ -101,6 +101,7 @@ class SnakeGame : CoroutineScope {
 
     private fun createNewTimeFreezer() {
         if (!timeFreezer.isAlive) {
+            gameField[timeFreezer.x][timeFreezer.y] = ""
             do {
                 timeFreezer = TimeFreezer(Random.nextInt(WIDTH), Random.nextInt(HEIGHT))
             } while ((snake.checkCollision(timeFreezer)) || ((mushroom.x == timeFreezer.x) && (mushroom.y == timeFreezer.y))
@@ -112,6 +113,7 @@ class SnakeGame : CoroutineScope {
 
     private fun createNewMushroom() {
         if (!mushroom.isAlive) {
+            gameField[mushroom.x][mushroom.y] = ""
             do {
                 mushroom = Mushroom(Random.nextInt(WIDTH), Random.nextInt(HEIGHT))
             } while (snake.checkCollision(mushroom) || ((mushroom.x == apple.x) && (mushroom.y == apple.y))
@@ -122,6 +124,7 @@ class SnakeGame : CoroutineScope {
 
     private fun createNewApple() {
         if (!apple.isAlive) {
+            gameField[apple.x][apple.y] = ""
             do {
                 apple = Apple(Random.nextInt(WIDTH), Random.nextInt(HEIGHT))
             } while (snake.checkCollision(apple))

@@ -63,10 +63,20 @@ class GameViewModel : ViewModel(), CoroutineScope {
 
     private fun getDirection() = snakeGame.getDirection()
 
+    fun getSnakeLength() = snakeGame.snake.getLength()
+
+    fun getScore() = snakeGame.score
+
+    fun isGameOver() = snakeGame.gameOver
+
+    fun isWin() = snakeGame.win
+
     override fun onCleared() {
         viewStateChannel.close()
         errorChannel.close()
         coroutineContext.cancel()
+        dataJob.cancel()
+        errorJob.cancel()
         super.onCleared()
     }
 }

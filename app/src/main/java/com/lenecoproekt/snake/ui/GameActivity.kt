@@ -46,7 +46,9 @@ class GameActivity : AppCompatActivity(), CoroutineScope {
         cells = Array(HEIGHT) { arrayOfNulls(WIDTH) }
         ui.score.text = POINTS
         ui.snakeLength.text = SNAKE_LENGTH
+        ui.timer.text = TIMER
         initializeGameField()
+        ui.chronometer.start()
         ui.restart.setOnClickListener{
             recreate()
         }
@@ -58,7 +60,10 @@ class GameActivity : AppCompatActivity(), CoroutineScope {
                 when (gameField[i][j]){
                     SNAKE_HEAD -> cells[i][j]?.setBackgroundResource(R.drawable.ic_baseline_android_24)
                     SNAKE_BODY -> cells[i][j]?.setBackgroundResource(R.drawable.ic_snake_body_1_24)
-                    "" -> cells[i][j]?.setBackgroundResource(R.drawable.ic_baseline_grass_24)
+                    "" -> {
+                        cells[i][j]?.setBackgroundResource(R.drawable.ic_baseline_grass_24)
+                        cells[i][j]?.text=""
+                    }
                     else -> {
                         cells[i][j]?.setBackgroundColor(resources.getColor(R.color.white, theme))
                         cells[i][j]?.text = gameField[i][j]
@@ -66,6 +71,9 @@ class GameActivity : AppCompatActivity(), CoroutineScope {
                 }
             }
         }
+        if (viewModel.isGameOver() || viewModel.isWin()) ui.chronometer.stop()
+        ui.length.text = viewModel.getSnakeLength().toString()
+        ui.scoreN.text = viewModel.getScore().toString()
     }
 
     @RequiresApi(Build.VERSION_CODES.R)
@@ -84,7 +92,7 @@ class GameActivity : AppCompatActivity(), CoroutineScope {
                 val scrHeight = size.y
                 val dm = resources.displayMetrics
 //                cell.textSize = (scrHeight.toFloat() / scrWidth.toFloat()) * (dm.densityDpi) / ((WIDTH + HEIGHT).toFloat())
-                cell.textSize = 24f
+                cell.textSize = 22f
                 println(cell.textSize)
                 cell.textAlignment = View.TEXT_ALIGNMENT_CENTER
                 cells[i][j] = cell

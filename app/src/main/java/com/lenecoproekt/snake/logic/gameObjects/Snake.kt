@@ -8,7 +8,7 @@ data class Snake(var x: Int, var y: Int) {
     var isAlive = true
     var direction = Direction.LEFT
     var snakeParts =
-        mutableListOf(GameObject(x, y), GameObject(x+1, y), GameObject(x+2, y))
+        mutableListOf(GameObject(x, y), GameObject(x, y+1), GameObject(x, y+2))
         private set
 
     fun changeDirection(direction: Direction) {
@@ -53,10 +53,10 @@ data class Snake(var x: Int, var y: Int) {
     }
 
     private fun createNewHead(): GameObject = when (direction) {
-        Direction.LEFT -> GameObject(snakeParts[0].x - 1, snakeParts[0].y)
-        Direction.RIGHT -> GameObject(snakeParts[0].x + 1, snakeParts[0].y)
-        Direction.UP -> GameObject(snakeParts[0].x, snakeParts[0].y - 1)
-        Direction.DOWN -> GameObject(snakeParts[0].x, snakeParts[0].y + 1)
+        Direction.LEFT -> GameObject(snakeParts[0].x, snakeParts[0].y-1)
+        Direction.RIGHT -> GameObject(snakeParts[0].x, snakeParts[0].y+1)
+        Direction.UP -> GameObject(snakeParts[0].x-1, snakeParts[0].y)
+        Direction.DOWN -> GameObject(snakeParts[0].x+1, snakeParts[0].y)
     }
 
     public fun checkCollision(gameObject: GameObject): Boolean {
