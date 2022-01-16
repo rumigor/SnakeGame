@@ -1,18 +1,12 @@
 package com.lenecoproekt.snake.logic
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import com.lenecoproekt.snake.*
 import com.lenecoproekt.snake.logic.gameObjects.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 import kotlin.random.Random
 
 class SnakeGame : CoroutineScope {
@@ -43,6 +37,7 @@ class SnakeGame : CoroutineScope {
     private var timeFreezer = TimeFreezer(0, 0)
     private var bomb = Bomb(0, 0)
 
+
     private val stateChannel = BroadcastChannel<Array<Array<String?>>>(Channel.CONFLATED)
 
     val gameField: Array<Array<String?>> = Array(HEIGHT) { arrayOf("", "", "", "", "", "", "", "",
@@ -64,7 +59,7 @@ class SnakeGame : CoroutineScope {
         }
     }
 
-    public suspend fun startGame() {
+    suspend fun startGame() {
         initialize()
         while (!gameOver && !win) {
             delay(turnDelay)
@@ -83,7 +78,8 @@ class SnakeGame : CoroutineScope {
     }
 
     private fun loadSnake() {
-        gameField[snake.snakeParts[0].x][snake.snakeParts[0].y] = SNAKE_HEAD
+        if (!gameOver) gameField[snake.snakeParts[0].x][snake.snakeParts[0].y] = SNAKE_HEAD
+        else gameField[snake.snakeParts[0].x][snake.snakeParts[0].y] = "X"
         for (i in 1 until snake.snakeParts.size) {
             gameField[snake.snakeParts[i].x][snake.snakeParts[i].y] = SNAKE_BODY
         }
@@ -101,7 +97,6 @@ class SnakeGame : CoroutineScope {
 
     private fun createNewTimeFreezer() {
         if (!timeFreezer.isAlive) {
-            gameField[timeFreezer.x][timeFreezer.y] = ""
             do {
                 timeFreezer = TimeFreezer(Random.nextInt(WIDTH), Random.nextInt(HEIGHT))
             } while ((snake.checkCollision(timeFreezer)) || ((mushroom.x == timeFreezer.x) && (mushroom.y == timeFreezer.y))
@@ -113,7 +108,6 @@ class SnakeGame : CoroutineScope {
 
     private fun createNewMushroom() {
         if (!mushroom.isAlive) {
-            gameField[mushroom.x][mushroom.y] = ""
             do {
                 mushroom = Mushroom(Random.nextInt(WIDTH), Random.nextInt(HEIGHT))
             } while (snake.checkCollision(mushroom) || ((mushroom.x == apple.x) && (mushroom.y == apple.y))
@@ -124,7 +118,6 @@ class SnakeGame : CoroutineScope {
 
     private fun createNewApple() {
         if (!apple.isAlive) {
-            gameField[apple.x][apple.y] = ""
             do {
                 apple = Apple(Random.nextInt(WIDTH), Random.nextInt(HEIGHT))
             } while (snake.checkCollision(apple))
@@ -151,8 +144,12 @@ class SnakeGame : CoroutineScope {
             turnDelay += 10
             return
         }
-        if (!bomb.isAlive) gameOver = true
-        if (!snake.isAlive) gameOver = true
+        if (!bomb.isAlive) {
+            gameOver = true
+        }
+        if (!snake.isAlive) {
+            gameOver = true
+        }
         if (snake.getLength() > goal) win = true
         initialize()
     }

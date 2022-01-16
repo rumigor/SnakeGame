@@ -7,10 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.Display
 import android.view.View
-import android.widget.Button
-import android.widget.ImageButton
-import android.widget.TableRow
-import android.widget.TextView
+import android.widget.*
 import androidx.annotation.RequiresApi
 import androidx.annotation.Size
 import androidx.core.view.marginBottom
@@ -58,12 +55,16 @@ class GameActivity : AppCompatActivity(), CoroutineScope {
         for (i in 0 until HEIGHT) {
             for (j in 0 until WIDTH) {
                 when (gameField[i][j]){
-                    SNAKE_HEAD -> cells[i][j]?.setBackgroundResource(R.drawable.ic_baseline_android_24)
+                    SNAKE_HEAD -> {
+                        cells[i][j]?.setBackgroundResource(R.drawable.ic_baseline_android_24)
+                        cells[i][j]?.text = ""
+                    }
                     SNAKE_BODY -> cells[i][j]?.setBackgroundResource(R.drawable.ic_snake_body_1_24)
                     "" -> {
-                        cells[i][j]?.setBackgroundResource(R.drawable.ic_baseline_grass_24)
+                        cells[i][j]?.setBackgroundResource(R.drawable.cell)
                         cells[i][j]?.text=""
                     }
+                    "X" -> cells[i][j]?.setBackgroundResource(R.drawable.ic_baseline_cancel_24)
                     else -> {
                         cells[i][j]?.setBackgroundColor(resources.getColor(R.color.white, theme))
                         cells[i][j]?.text = gameField[i][j]
@@ -71,7 +72,11 @@ class GameActivity : AppCompatActivity(), CoroutineScope {
                 }
             }
         }
-        if (viewModel.isGameOver() || viewModel.isWin()) ui.chronometer.stop()
+        if (viewModel.isGameOver() || viewModel.isWin()) {
+            ui.chronometer.stop()
+            if (viewModel.isGameOver()) ui.gameProgress.text = "GAME OVER!"
+            if (viewModel.isWin()) ui.gameProgress.text = "YOU WON!"
+        }
         ui.length.text = viewModel.getSnakeLength().toString()
         ui.scoreN.text = viewModel.getScore().toString()
     }
