@@ -79,4 +79,9 @@ class GameViewModel : ViewModel(), CoroutineScope {
         errorJob.cancel()
         super.onCleared()
     }
+
+    suspend fun restart(){
+        snakeGame.restart()
+
+    }
 }

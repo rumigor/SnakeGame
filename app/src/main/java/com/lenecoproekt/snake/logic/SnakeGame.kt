@@ -17,6 +17,7 @@ class SnakeGame : CoroutineScope {
 
     var snake = Snake(WIDTH / 2, HEIGHT / 2)
         private set
+    var wall = Wall(0, 0)
 
     var gameOver = false
         private set
@@ -32,6 +33,8 @@ class SnakeGame : CoroutineScope {
     private var turnDelay = 1000L
     private var goal = 28
 
+    private val wallNumber = 10
+
     private var apple = Apple(0, 0)
     private var mushroom = Mushroom(0, 0)
     private var timeFreezer = TimeFreezer(0, 0)
@@ -40,7 +43,7 @@ class SnakeGame : CoroutineScope {
 
     private val stateChannel = BroadcastChannel<Array<Array<String?>>>(Channel.CONFLATED)
 
-    val gameField: Array<Array<String?>> = Array(HEIGHT) { arrayOf("", "", "", "", "", "", "", "",
+    private var gameField: Array<Array<String?>> = Array(HEIGHT) { arrayOf("", "", "", "", "", "", "", "",
         "","","","","","","") }
 
 
@@ -54,16 +57,24 @@ class SnakeGame : CoroutineScope {
     private fun loadField() {
         for (i in 0 until HEIGHT) {
             for (j in 0 until WIDTH) {
-                if (gameField[i][j] != BOMB) gameField[i][j] = ""
+                if (gameField[i][j] != BOMB && gameField[i][j] != "WALL") gameField[i][j] = ""
             }
         }
     }
 
     suspend fun startGame() {
+        loadWalls()
         initialize()
         while (!gameOver && !win) {
             delay(turnDelay)
             nextTurn()
+        }
+    }
+
+    private fun loadWalls() {
+        for (i in 0..wallNumber) {
+            val wall = Wall(Random.nextInt(WIDTH), Random.nextInt(HEIGHT))
+            gameField[wall.x][wall.y] = "WALL"
         }
     }
 
@@ -91,7 +102,7 @@ class SnakeGame : CoroutineScope {
             bomb = Bomb(Random.nextInt(WIDTH), Random.nextInt(HEIGHT));
         } while ((snake.checkCollision(bomb)) || ((mushroom.x == bomb.x) && (mushroom.y == bomb.y))
             || ((apple.x == bomb.x) && (apple.y == bomb.y)) || ((timeFreezer.x == bomb.x) && (timeFreezer.y == bomb.y))
-        )
+            || (gameField[bomb.x][bomb.y] == "WALL"))
         gameField[bomb.x][bomb.y] = BOMB
     }
 
@@ -100,7 +111,7 @@ class SnakeGame : CoroutineScope {
             do {
                 timeFreezer = TimeFreezer(Random.nextInt(WIDTH), Random.nextInt(HEIGHT))
             } while ((snake.checkCollision(timeFreezer)) || ((mushroom.x == timeFreezer.x) && (mushroom.y == timeFreezer.y))
-                || ((apple.x == timeFreezer.x) && (apple.y == timeFreezer.y))
+                || ((apple.x == timeFreezer.x) && (apple.y == timeFreezer.y)) || (gameField[timeFreezer.x][timeFreezer.y] == "WALL")
             )
         }
         gameField[timeFreezer.x][timeFreezer.y] = TIME_FREEZER
@@ -110,8 +121,8 @@ class SnakeGame : CoroutineScope {
         if (!mushroom.isAlive) {
             do {
                 mushroom = Mushroom(Random.nextInt(WIDTH), Random.nextInt(HEIGHT))
-            } while (snake.checkCollision(mushroom) || ((mushroom.x == apple.x) && (mushroom.y == apple.y))
-            )
+            } while (snake.checkCollision(mushroom) || ((mushroom.x == apple.x) && (mushroom.y == apple.y)) ||
+                    (gameField[mushroom.x][mushroom.y] == "WALL"))
         }
         gameField[mushroom.x][mushroom.y] = MUSHROOM
     }
@@ -120,7 +131,7 @@ class SnakeGame : CoroutineScope {
         if (!apple.isAlive) {
             do {
                 apple = Apple(Random.nextInt(WIDTH), Random.nextInt(HEIGHT))
-            } while (snake.checkCollision(apple))
+            } while (snake.checkCollision(apple) || (gameField[apple.x][apple.y] == "WALL"))
             createNewBomb()
         }
         gameField[apple.x][apple.y] = APPLE
@@ -131,7 +142,7 @@ class SnakeGame : CoroutineScope {
         if (!apple.isAlive) {
             initialize()
             score += 5
-            turnDelay -= 10
+            turnDelay -= 50
             return
         }
         if (!mushroom.isAlive) {
@@ -141,13 +152,17 @@ class SnakeGame : CoroutineScope {
         }
         if (!timeFreezer.isAlive) {
             initialize()
-            turnDelay += 10
+            turnDelay += 50
             return
         }
         if (!bomb.isAlive) {
             gameOver = true
         }
         if (!snake.isAlive) {
+            gameOver = true
+        }
+        if (gameField[snake.snakeParts[0].x][snake.snakeParts[0].y] == "WALL"){
+            snake.isAlive = false
             gameOver = true
         }
         if (snake.getLength() > goal) win = true
@@ -164,4 +179,19 @@ class SnakeGame : CoroutineScope {
     }
 
     fun getDirection() = snake.direction
+
+    suspend fun restart(){
+        gameField = Array(HEIGHT) { arrayOf("", "", "", "", "", "", "", "",
+            "","","","","","","") }
+        snake = Snake(WIDTH / 2, HEIGHT / 2)
+        snake.isAlive = true
+        gameOver = false
+        apple.isAlive = false
+        mushroom.isAlive = false
+        timeFreezer.isAlive = false
+        bomb.isAlive = false
+        turnDelay = 1000L
+        score = 0
+        startGame()
+    }
 }

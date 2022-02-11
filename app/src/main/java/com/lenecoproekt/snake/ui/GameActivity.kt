@@ -1,28 +1,31 @@
 package com.lenecoproekt.snake.ui
 
+
 import android.content.Context
+import android.content.Intent
 import android.graphics.Point
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.view.Display
+import android.os.SystemClock
 import android.view.View
 import android.widget.*
 import androidx.annotation.RequiresApi
-import androidx.annotation.Size
-import androidx.core.view.marginBottom
-import androidx.core.view.setPadding
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.snackbar.Snackbar
 import com.lenecoproekt.snake.*
 import com.lenecoproekt.snake.databinding.ActivityGameBinding
-import com.lenecoproekt.snake.logic.Direction
 import com.lenecoproekt.snake.viewmodel.GameViewModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.consumeEach
 import kotlin.coroutines.CoroutineContext
 
 class GameActivity : AppCompatActivity(), CoroutineScope {
+
+
+    companion object {
+        fun getStartIntent(context: Context) = Intent(context, GameActivity::class.java)
+    }
 
     override val coroutineContext: CoroutineContext by lazy {
         Dispatchers.Main + Job()
@@ -47,7 +50,10 @@ class GameActivity : AppCompatActivity(), CoroutineScope {
         initializeGameField()
         ui.chronometer.start()
         ui.restart.setOnClickListener{
-            recreate()
+            ui.chronometer.stop()
+            launch {  viewModel.restart()}
+            ui.chronometer.base = SystemClock.elapsedRealtime()
+            ui.chronometer.start()
         }
     }
 
@@ -56,17 +62,22 @@ class GameActivity : AppCompatActivity(), CoroutineScope {
             for (j in 0 until WIDTH) {
                 when (gameField[i][j]){
                     SNAKE_HEAD -> {
-                        cells[i][j]?.setBackgroundResource(R.drawable.ic_baseline_android_24)
-                        cells[i][j]?.text = ""
+                        cells[i][j]?.text = "\uD83D\uDC38"
                     }
-                    SNAKE_BODY -> cells[i][j]?.setBackgroundResource(R.drawable.ic_snake_body_1_24)
+                    SNAKE_BODY -> {
+                        cells[i][j]?.text = "⚫"
+                    }
                     "" -> {
-                        cells[i][j]?.setBackgroundResource(R.drawable.cell)
-                        cells[i][j]?.text=""
+                        cells[i][j]?.text="\uD83C\uDF3F"
                     }
-                    "X" -> cells[i][j]?.setBackgroundResource(R.drawable.ic_baseline_cancel_24)
+                    "X" -> {
+                        cells[i][j]?.text = "❌"
+                        cells[i][j]?.setTextColor(resources.getColor(android.R.color.holo_red_dark, theme))
+                    }
+                    "WALL" -> {
+                        cells[i][j]?.text = "\uD83E\uDDF1"
+                    }
                     else -> {
-                        cells[i][j]?.setBackgroundColor(resources.getColor(R.color.white, theme))
                         cells[i][j]?.text = gameField[i][j]
                     }
                 }
@@ -85,11 +96,11 @@ class GameActivity : AppCompatActivity(), CoroutineScope {
     private fun initializeGameField() {
         for (i in 0 until HEIGHT) {
             val tableRow = TableRow(this)
-            tableRow.layoutParams = TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT)
+            tableRow.layoutParams = TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.MATCH_PARENT)
             for (j in 0 until WIDTH) {
                 val cell = TextView(this)
-                cell.setBackgroundResource(R.drawable.ic_baseline_grass_24)
                 cell.text = ""
+                cell.setBackgroundResource(R.drawable.cell)
                 val display = this.display
                 val size = Point()
                 display?.getRealSize(size)
