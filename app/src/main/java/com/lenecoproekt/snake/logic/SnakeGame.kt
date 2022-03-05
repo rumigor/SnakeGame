@@ -33,7 +33,7 @@ class SnakeGame : CoroutineScope {
     private var turnDelay = 1000L
     private var goal = 28
 
-    private val wallNumber = 10
+    private var wallNumber = AppPreferences.wall
 
     private var apple = Apple(0, 0)
     private var mushroom = Mushroom(0, 0)
@@ -48,6 +48,7 @@ class SnakeGame : CoroutineScope {
 
 
     init{
+        if (wallNumber == null) wallNumber = 0
         apple.isAlive = false
         mushroom.isAlive = false
         timeFreezer.isAlive = false
@@ -72,7 +73,7 @@ class SnakeGame : CoroutineScope {
     }
 
     private fun loadWalls() {
-        for (i in 0..wallNumber) {
+        for (i in 0..wallNumber!!) {
             val wall = Wall(Random.nextInt(WIDTH), Random.nextInt(HEIGHT))
             gameField[wall.x][wall.y] = "WALL"
         }
